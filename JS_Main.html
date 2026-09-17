@@ -1,0 +1,1159 @@
+<style id="up-oracular-design-system">
+:root {
+  color-scheme: dark;
+  --uo-bg: #15171c;
+  --uo-panel: #20242b;
+  --uo-text: #e9ecf1;
+  --uo-muted: #b2b9c4;
+  --uo-border: #343941;
+  --uo-accent: #7aa2d6;
+  --uo-radius-group: 10px;
+  --uo-radius-control: 8px;
+}
+
+html, body {
+  background: var(--uo-bg) !important;
+  color: var(--uo-text) !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body, input, select, textarea, button {
+  color: var(--uo-text);
+}
+
+.card, .panel, .modal, .dialog, dialog, .container,
+.box, .widget, .section, .sidebar, .drawer, .popover,
+[role="dialog"], [class*="card"], [class*="panel"] {
+  background-color: var(--uo-panel) !important;
+  border-color: var(--uo-border) !important;
+  border-radius: var(--uo-radius-group) !important;
+}
+
+button, input, select, textarea, .btn, .button,
+[role="button"], [role="menuitem"], .dropdown-item,
+.menu-item, [class*="button"], [class*="dropdown-item"] {
+  border-radius: var(--uo-radius-control) !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+input, select, textarea {
+  background-color: var(--uo-panel) !important;
+  border: 1px solid var(--uo-border) !important;
+  padding: 8px !important;
+  box-sizing: border-box;
+}
+
+label, .form-label, [class*="form-label"] {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--uo-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.35;
+}
+
+.uo-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.uo-feedback-box {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  min-width: 220px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--uo-border);
+  border-radius: var(--uo-radius-group);
+  background: var(--uo-panel);
+  color: var(--uo-text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.uo-feedback-box.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.uo-feedback-box[data-kind="ok"] {
+  border-color: #8fc2a6;
+  color: #8fc2a6;
+}
+
+.uo-feedback-box[data-kind="err"] {
+  border-color: #d98b93;
+  color: #d98b93;
+}
+
+form[aria-busy="true"] {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+form[aria-busy="true"] :is(button, input[type="submit"], input[type="button"]) {
+  pointer-events: none;
+}
+
+button, .btn-primary, .button-primary,
+[class*="primary"][role="button"] {
+  background-color: var(--uo-accent) !important;
+}
+
+p, small, .muted, .secondary, .subtitle,
+[class*="muted"], [class*="secondary"] {
+  color: var(--uo-muted) !important;
+}
+
+hr, table, th, td, fieldset {
+  border-color: var(--uo-border) !important;
+}
+
+a {
+  color: var(--uo-accent);
+}
+
+/* Geometrias funcionais permanecem circulares. */
+.avatar, .spinner, .loading-ring, .dot, .status-dot,
+[class*="avatar"], [class*="spinner"], [class*="loading-ring"] {
+  border-radius: 50% !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent, #8ab4f8) !important;
+  box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.1) !important;
+}
+</style>
+<script id="up-oracular-form-feedback">
+(function () {
+  'use strict';
+  if (window.UpOracularFeedback) return;
+
+  var timer = null;
+  function notify(kind, message) {
+    var box = document.getElementById('uo-feedback-box');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'uo-feedback-box';
+      box.className = 'uo-feedback-box';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      document.body.appendChild(box);
+    }
+    box.dataset.kind = kind === 'err' ? 'err' : 'ok';
+    box.textContent = String(message || (kind === 'err' ? 'Nao foi possivel concluir.' : 'Operacao concluida.'));
+    box.classList.add('is-visible');
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      box.classList.remove('is-visible');
+    }, 1000);
+  }
+
+  function connectLabels(form) {
+    form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (field, index) {
+      var id = field.id || ('uo-field-' + index + '-' + Math.random().toString(36).slice(2, 7));
+      field.id = id;
+      var label = form.querySelector('label[for="' + id + '"]');
+      if (!label) {
+        var sibling = field.previousElementSibling;
+        if (sibling && sibling.tagName === 'LABEL') {
+          sibling.htmlFor = id;
+          label = sibling;
+        }
+      }
+      if (label && field.parentElement && !field.parentElement.classList.contains('uo-field')) {
+        field.parentElement.classList.add('uo-field');
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form').forEach(connectLabels);
+  });
+
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (!form || form.tagName !== 'FORM') return;
+    form.setAttribute('aria-busy', 'true');
+    notify('ok', 'Enviando...');
+    window.setTimeout(function () {
+      if (form.getAttribute('aria-busy') === 'true') {
+        form.removeAttribute('aria-busy');
+      }
+    }, 10000);
+  }, true);
+
+  window.UpOracularFeedback = {
+    ok: function (message) { notify('ok', message); },
+    err: function (message) { notify('err', message); },
+    done: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('ok', message);
+    },
+    fail: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('err', message);
+    }
+  };
+}());
+</script>
+
+<style>
+
+
+/* codex-school-community-ux: ajustes finos para uso recorrente por comunidade escolar */
+:root {
+  --codex-school-focus: #ffd166;
+  --codex-school-touch: 44px;
+  --codex-school-radius: 8px;
+  --codex-school-field-radius: 7px;
+  --codex-school-form-gap: 14px;
+  --codex-school-field-border: rgba(120, 132, 156, 0.45);
+  --codex-school-field-bg: rgba(255, 255, 255, 0.96);
+  --codex-school-field-text: #1f2937;
+  --codex-school-muted-text: #64748b;
+  --codex-school-soft-surface: rgba(248, 250, 252, 0.82);
+  --codex-school-safe-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+:where(html) {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+:where(body) {
+  overscroll-behavior-y: contain;
+}
+
+:where(p, li, dd, dt, blockquote, figcaption, label, td, th) {
+  line-height: 1.5;
+}
+
+:where(main, .main, .content, .page, .app, .app-shell, .container, .dashboard, .workspace) {
+  padding-bottom: var(--codex-school-safe-bottom);
+}
+
+:where(a, button, .btn, .button, [role="button"], input, select, textarea, summary) {
+  min-height: var(--codex-school-touch);
+  touch-action: manipulation;
+}
+
+:where(button, .btn, .button, [role="button"], input[type="submit"], input[type="button"]) {
+  border-radius: var(--codex-school-radius) !important;
+  font-weight: 700;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--codex-school-focus) !important;
+  outline-offset: 3px !important;
+}
+
+:where(label) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  color: var(--codex-gentle-muted, var(--text-muted, var(--codex-school-muted-text)));
+  font-weight: 700;
+}
+
+:where(form) {
+  border-radius: var(--codex-school-radius) !important;
+}
+
+:where(fieldset) {
+  border-radius: var(--codex-school-radius) !important;
+  border-color: var(--codex-school-field-border);
+}
+
+:where(legend) {
+  padding-inline: 6px;
+  font-weight: 700;
+}
+
+:where(.form-group, .input-field, .field, .form-field, .control-group) {
+  margin-bottom: var(--codex-school-form-gap);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  width: min(100%, 100%);
+  border-radius: var(--codex-school-field-radius) !important;
+  border-color: var(--codex-school-field-border) !important;
+  background-color: var(--input-bg, var(--field-bg, var(--codex-school-field-bg)));
+  color: var(--input-text, var(--text-color, var(--codex-school-field-text)));
+  font-size: 16px !important;
+}
+
+:where(input::placeholder, textarea::placeholder) {
+  color: var(--placeholder-color, #94a3b8);
+  opacity: 1;
+}
+
+:where(input[required], select[required], textarea[required]) {
+  border-left: 3px solid var(--codex-gentle-primary-strong, #aecbfa) !important;
+}
+
+:where(input:disabled, select:disabled, textarea:disabled, button:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed !important;
+  opacity: 0.68;
+}
+
+:where(.help, .hint, .help-text, .form-help, small) {
+  line-height: 1.45;
+  color: var(--codex-gentle-muted, var(--text-muted, var(--codex-school-muted-text)));
+}
+
+:where(.actions, .form-actions, .button-row, .toolbar, .topbar, nav, [role="toolbar"]) {
+  gap: 8px;
+}
+
+:where(.actions, .form-actions, .button-row) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+:where(.actions, .form-actions, .button-row) > :where(button, .btn, .button, [role="button"]) {
+  flex: 1 1 148px;
+}
+
+:where(.card, .panel, .box, .tile, .item, .list-item, .action-card) {
+  border-radius: var(--codex-school-radius) !important;
+}
+
+:where(.section, .surface, .widget, .modal-content, .dialog-content, .drawer, .dropdown, .menu) {
+  border-radius: var(--codex-school-radius) !important;
+}
+
+:where(.filters, .search-panel, .form-section) {
+  border-radius: var(--codex-school-radius) !important;
+  background: var(--codex-school-soft-surface);
+}
+
+:where(table) {
+  border-collapse: collapse;
+}
+
+:where(table, .table, .data-table) {
+  max-width: 100%;
+}
+
+:where(.table-wrap, .table-wrapper, .table-container, .responsive-table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+:where(th, td) {
+  vertical-align: top;
+}
+
+:where(.toast, .alert, .notice, .snackbar, [role="status"], [role="alert"]) {
+  border-radius: var(--codex-school-radius) !important;
+  line-height: 1.45;
+}
+
+@media (max-width: 420px) {
+  :where(body) {
+    font-size: 16px;
+  }
+
+  :where(h1) {
+    font-size: clamp(1.55rem, 1.35rem + 1vw, 2rem) !important;
+    line-height: 1.15 !important;
+  }
+
+  :where(h2) {
+    font-size: clamp(1.25rem, 1.1rem + 0.8vw, 1.55rem) !important;
+    line-height: 1.2 !important;
+  }
+
+  :where(.toolbar, .topbar, nav, [role="toolbar"]) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  :where(.hide-mobile, .desktop-only) {
+    display: none !important;
+  }
+}
+</style>
+<!--
+  @file JS_Main.html
+  @description Script principal do lado do cliente (núcleo da SPA).
+    O markup do layout (loader global, app-content) vive em Index.html; este
+    arquivo é apenas o núcleo de orquestração (Metateca) e utilitários globais.
+  @author Antigravity (ag-kit)
+  @date 2026-05-31
+-->
+<script>
+  /**
+   * Núcleo da SPA do Painel da Direção de Escola Classe vinculada à CRE-PP.
+   * Responsável por estado de sessão, navegação entre vistas e chamadas ao servidor.
+   */
+  const Metateca = {
+    state: {
+      user: null,
+      currentView: 'Login_Page',
+      currentViewParams: {},
+      isLoading: false
+    },
+
+    /**
+     * Inicializa a aplicação. Tenta restaurar a sessão ativa (cache do servidor)
+     * para sobreviver a reloads; cai para a tela de login se não houver sessão.
+     */
+    init() {
+      this.callServer('getCurrentUser', [],
+        (user) => {
+          if (user) {
+            this.state.user = user;
+            this.navigate('Dashboard_Main');
+          } else {
+            this.navigate('Login_Page');
+          }
+        },
+        () => { this.navigate('Login_Page'); }
+      );
+    },
+
+    /**
+     * Alterna entre as diferentes vistas da aplicação.
+     * @param {string} viewName Nome do arquivo HTML a carregar (sem .html).
+     * @param {Object} [params] Parâmetros passados à vista (lidos via state.currentViewParams).
+     */
+    navigate(viewName, params = {}) {
+      this.showLoading(true);
+      this.state.currentView = viewName;
+      this.state.currentViewParams = params || {};
+
+      google.script.run
+        .withSuccessHandler((html) => {
+          this.showLoading(false);
+          this.renderViewHtml(viewName, html, params);
+        })
+        .withFailureHandler((err) => {
+          this.showLoading(false);
+          this.renderFallbackView(viewName, err);
+          this.showNotification('Erro ao carregar vista: ' + this.getErrorMessage(err), 'danger');
+        })
+        .include(viewName);
+    },
+
+    /**
+     * Injeta a vista carregada pelo servidor e protege contra resposta vazia.
+     */
+    renderViewHtml(viewName, html, params) {
+      const target = document.getElementById('app-content');
+      if (!target) return;
+
+      const rawHtml = typeof html === 'string' ? html : '';
+      if (!this.hasRenderableHtml(rawHtml)) {
+        this.renderFallbackView(viewName, new Error('HTML da vista vazio ou inerte.'));
+        return;
+      }
+
+      try {
+        // [TRUSTED-SERVER-HTML] Retornado pelo HtmlService do GAS — não é dado de usuário.
+        target.innerHTML = rawHtml;
+        if (!this.hasRenderableContent(target)) {
+          this.renderFallbackView(viewName, new Error('Vista sem conteudo renderizavel.'));
+          return;
+        }
+        this.onViewLoaded(viewName, params);
+      } catch (err) {
+        this.renderFallbackView(viewName, err);
+        this.showNotification('Falha ao renderizar vista: ' + this.getErrorMessage(err), 'danger');
+      }
+    },
+
+    /**
+     * Verifica se o HTML retornado tem algo alem de comentarios/scripts/estilos.
+     */
+    hasRenderableHtml(html) {
+      const source = String(html || '');
+      if (/<(div|main|section|article|form|nav|header|aside|table|button|a|h1|h2|p)\b/i.test(source)) return true;
+
+      const text = source
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .trim();
+      return text.length > 0;
+    },
+
+    /**
+     * Confirma que a injecao deixou elementos visiveis/interativos no alvo.
+     */
+    hasRenderableContent(target) {
+      if (!target) return false;
+      return !!target.querySelector('div, main, section, article, form, nav, header, aside, table, button, a, h1, h2, p');
+    },
+
+    /**
+     * Renderiza uma experiencia minima quando a vista principal nao vem do servidor.
+     */
+    renderFallbackView(viewName, err) {
+      const target = document.getElementById('app-content');
+      if (!target) return;
+
+      if (viewName === 'Dashboard_Main') {
+        target.innerHTML = this.getDashboardFallbackHtml(err);
+      } else if (viewName === 'Login_Page') {
+        target.innerHTML = this.getLoginFallbackHtml(err);
+      } else {
+        target.innerHTML = this.getGenericFallbackHtml(viewName, err);
+      }
+
+      this.showLoading(false);
+      this.refreshChrome();
+
+      if (viewName === 'Dashboard_Main' && typeof initDashboardMain === 'function') {
+        try {
+          initDashboardMain();
+        } catch (initErr) {
+          this.showNotification('Painel aberto em modo de contingencia.', 'warning');
+        }
+      }
+    },
+
+    getDashboardFallbackHtml(err) {
+      const user = this.state.user || {};
+      const name = sanitizeString(user.Nome || user.Name || user.Username || 'Usuario');
+      const isAdmin = String(user.Role || '').toLowerCase() === 'admin';
+      const usersDisplay = isAdmin ? 'block' : 'none';
+
+      return ''
+        + '<section id="dashboard-root" class="animate-fade" style="max-width:1100px;margin:0 auto;padding:24px 20px;color:var(--text-main,var(--text,#202124));">'
+        + '  <header style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;">'
+        + '    <div>'
+        + '      <p style="margin:0 0 6px;color:var(--text-muted,#64748b);font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Modo de contingencia</p>'
+        + '      <h1 style="margin:0;font-size:1.6rem;color:var(--primary,#0f3d2e);">Bem-vindo, <span id="dash-user-name">' + name + '</span></h1>'
+        + '      <p style="margin:4px 0 0;color:var(--text-muted,#64748b);">A sessao esta ativa. Use os atalhos enquanto a vista completa e carregada.</p>'
+        + '    </div>'
+        + '    <button type="button" onclick="Metateca.logout()" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;">Sair</button>'
+        + '  </header>'
+        + '  <section aria-label="Indicadores" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;">'
+        + '    <div style="background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:8px;padding:16px;"><div style="color:var(--text-muted,#64748b);font-size:.8rem;text-transform:uppercase;">Itens no PCA</div><div id="m-total" style="font-size:1.8rem;font-weight:800;">0</div></div>'
+        + '    <div style="background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:8px;padding:16px;"><div style="color:var(--text-muted,#64748b);font-size:.8rem;text-transform:uppercase;">Valor estimado</div><div id="m-valor" style="font-size:1.8rem;font-weight:800;">R$ 0,00</div></div>'
+        + '    <div style="background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:8px;padding:16px;"><div style="color:var(--text-muted,#64748b);font-size:.8rem;text-transform:uppercase;">Em analise</div><div id="m-draft" style="font-size:1.8rem;font-weight:800;">0</div></div>'
+        + '    <div style="background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:8px;padding:16px;"><div style="color:var(--text-muted,#64748b);font-size:.8rem;text-transform:uppercase;">Priorizados</div><div id="m-approved" style="font-size:1.8rem;font-weight:800;">0</div></div>'
+        + '  </section>'
+        + '  <nav aria-label="Menu principal" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px;">'
+        + '    <button type="button" onclick="Metateca.navigate(\'PCA_List_View\')" style="justify-content:flex-start;text-align:left;background:#0f3d2e;color:#fff;border:0;border-radius:8px;padding:18px;font-weight:800;">Plano de Contratacoes</button>'
+        + '    <button type="button" onclick="Metateca.navigate(\'Legal_List_View\')" style="justify-content:flex-start;text-align:left;background:#1d4ed8;color:#fff;border:0;border-radius:8px;padding:18px;font-weight:800;">Referencias Legais</button>'
+        + '    <button type="button" id="menu-users" onclick="Metateca.navigate(\'User_List_View\')" style="display:' + usersDisplay + ';justify-content:flex-start;text-align:left;background:#7c3aed;color:#fff;border:0;border-radius:8px;padding:18px;font-weight:800;">Usuarios</button>'
+        + '    <button type="button" onclick="Metateca.navigate(\'Settings_Page\')" style="justify-content:flex-start;text-align:left;background:#0891b2;color:#fff;border:0;border-radius:8px;padding:18px;font-weight:800;">Configuracoes</button>'
+        + '  </nav>'
+        + '  <section>'
+        + '    <h2 style="font-size:1.1rem;margin:0 0 10px;">Ultimos itens do PCA</h2>'
+        + '    <div id="dash-pca-list" style="background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:8px;overflow:hidden;"><div style="padding:16px;color:var(--text-muted,#64748b);">Carregando dados...</div></div>'
+        + '  </section>'
+        + '</section>';
+    },
+
+    getLoginFallbackHtml(err) {
+      return ''
+        + '<section class="animate-fade" style="min-height:70vh;display:flex;align-items:center;justify-content:center;padding:24px;">'
+        + '  <div class="card" style="max-width:400px;width:100%;">'
+        + '    <h1 style="font-size:1.6rem;margin:0 0 8px;color:var(--primary,#1b3a6b);">Painel da Direcao</h1>'
+        + '    <p style="margin:0 0 18px;color:var(--text-muted,#64748b);">Acesso restrito a servidores autorizados.</p>'
+        + '    <form id="login-form" onsubmit="return handleLogin(event)">'
+        + '      <label for="login-email" style="display:block;margin-bottom:6px;font-weight:700;">Usuario ou Email</label>'
+        + '      <input inputmode="text" id="login-email" type="text" required autocomplete="username" style="width:100%;padding:12px;margin-bottom:14px;border:1px solid var(--border,#dadce0);border-radius:8px;">'
+        + '      <label for="login-password" style="display:block;margin-bottom:6px;font-weight:700;">Senha</label>'
+        + '      <input inputmode="text" id="login-password" type="password" required autocomplete="current-password" style="width:100%;padding:12px;margin-bottom:18px;border:1px solid var(--border,#dadce0);border-radius:8px;">'
+        + '      <button type="submit" class="btn btn-primary" style="width:100%;">Entrar no Sistema</button>'
+        + '    </form>'
+        + '  </div>'
+        + '</section>';
+    },
+
+    getGenericFallbackHtml(viewName, err) {
+      const safeView = sanitizeString(viewName || 'vista');
+      return ''
+        + '<section class="animate-fade" style="max-width:720px;margin:0 auto;padding:32px 20px;color:var(--text-main,var(--text,#202124));">'
+        + '  <h1 style="margin:0 0 8px;color:var(--primary,#1b3a6b);">Vista indisponivel</h1>'
+        + '  <p style="margin:0 0 18px;color:var(--text-muted,#64748b);">A sessao continua ativa, mas a vista <strong>' + safeView + '</strong> nao foi carregada agora.</p>'
+        + '  <div style="display:flex;flex-wrap:wrap;gap:10px;">'
+        + '    <button type="button" class="btn btn-primary" onclick="Metateca.navigate(\'Dashboard_Main\')">Voltar ao Painel</button>'
+        + '    <button type="button" class="btn" onclick="Metateca.logout()">Sair</button>'
+        + '  </div>'
+        + '</section>';
+    },
+
+    refreshChrome() {
+      try {
+        if (typeof updateNavbar === 'function')  updateNavbar();
+        if (typeof updateSidebar === 'function') updateSidebar();
+      } catch (err) {
+        this.showNotification('Falha ao atualizar navegacao: ' + this.getErrorMessage(err), 'warning');
+      }
+    },
+
+    getErrorMessage(err) {
+      if (!err) return 'falha desconhecida';
+      return err.message || String(err);
+    },
+
+    /**
+     * Encerra a sessão: invalida o token no servidor, limpa o estado local e
+     * retorna à tela de login. Resiliente a falhas de rede (limpa local de toda forma).
+     */
+    logout() {
+      const goToLogin = () => {
+        this.state.user = null;
+        this.state.currentViewParams = {};
+        this.navigate('Login_Page');
+      };
+      this.callServer('authLogout', [],
+        () => { this.showNotification('Sessão encerrada com segurança.', 'info'); goToLogin(); },
+        () => { goToLogin(); }
+      );
+    },
+
+    /**
+     * Hook chamado após uma vista ser injetada no DOM.
+     * Atualiza o chrome (navbar/sidebar) conforme o estado de sessão e a vista atual.
+     * As funções de chrome são declaradas em Navbar.html/Sidebar.html (carregadas antes
+     * deste script), por isso são invocadas aqui em vez de envolverem Metateca.
+     */
+    onViewLoaded(viewName, params) {
+      window.scrollTo(0, 0);
+
+      const container = document.getElementById('app-content').firstElementChild;
+      if (container) container.classList.add('animate-fade');
+
+      this.refreshChrome();
+
+      // Inicializadores por vista (a JS das vistas vive em nivel superior porque
+      // scripts injetados via innerHTML nao executam no HtmlService).
+      if (viewName === 'Dashboard_Main' && typeof initDashboardMain === 'function') {
+        try {
+          initDashboardMain();
+        } catch (err) {
+          this.showNotification('Painel aberto, mas alguns dados nao carregaram: ' + this.getErrorMessage(err), 'warning');
+        }
+      }
+    },
+
+    /**
+     * Mostra ou oculta o spinner de carregamento global.
+     */
+    showLoading(show) {
+      this.state.isLoading = show;
+      const loader = document.getElementById('global-loader');
+      if (loader) loader.style.display = show ? 'flex' : 'none';
+    },
+
+    /**
+     * Exibe uma notificação toast.
+     */
+    showNotification(message, type = 'info') {
+      if (window.showToast) window.showToast(message, type);
+    },
+
+    /**
+     * Wrapper para chamadas ao servidor com tratamento unificado de loading e falha.
+     */
+    callServer(functionName, args = [], successCallback, failureCallback) {
+      this.showLoading(true);
+      const runner = google.script.run
+        .withSuccessHandler((res) => {
+          this.showLoading(false);
+          if (successCallback) successCallback(res);
+        })
+        .withFailureHandler((err) => {
+          this.showLoading(false);
+          this.showNotification(err.message, 'danger');
+          if (failureCallback) failureCallback(err);
+        });
+
+      runner[functionName](...args);
+    }
+  };
+
+  window.Metateca = Metateca;
+
+  window.handleLogin = function(event) {
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+
+    var emailEl = document.getElementById('login-email');
+    var passEl = document.getElementById('login-password');
+    var email = emailEl ? String(emailEl.value || '').trim() : '';
+    var pass = passEl ? String(passEl.value || '') : '';
+
+    if (!email || !pass) {
+      Metateca.showNotification('Informe usuario e senha.', 'danger');
+      return false;
+    }
+
+    Metateca.callServer('authLogin', [email, pass], function(res) {
+      if (res && res.success) {
+        var user = res.user || {};
+        var name = user.Nome || user.Name || user.Username || 'usuario';
+        Metateca.state.user = user;
+        Metateca.showNotification('Bem-vindo, ' + name + '.', 'success');
+        Metateca.navigate('Dashboard_Main');
+      } else {
+        Metateca.showNotification((res && res.message) || 'Login invalido.', 'danger');
+      }
+    });
+
+    return false;
+  };
+
+  // ---------------------------------------------------------------------------
+  // Inicializador da vista Dashboard_Main (nivel superior; chamado por onViewLoaded)
+  // ---------------------------------------------------------------------------
+  function dashFmtMoney(v) {
+    var n = Number(v) || 0;
+    return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function dashSetText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+  function dashRenderUser() {
+    var u = (Metateca.state && Metateca.state.user) || {};
+    dashSetText('dash-user-name', u.Nome || u.Username || 'Usuário');
+    var isAdmin = String(u.Role || '').toLowerCase() === 'admin';
+    var usersBtn = document.getElementById('menu-users');
+    if (usersBtn) usersBtn.style.display = isAdmin ? 'block' : 'none';
+  }
+  function dashRenderMetrics(m) {
+    m = m || {};
+    dashSetText('m-total', m.total != null ? m.total : (m.totalCount != null ? m.totalCount : 0));
+    dashSetText('m-valor', dashFmtMoney(m.totalValue != null ? m.totalValue : m.valorTotal));
+    dashSetText('m-draft', m.draftCount != null ? m.draftCount : 0);
+    dashSetText('m-approved', m.approvedCount != null ? m.approvedCount : 0);
+  }
+  function dashRenderPcaList(rows) {
+    var box = document.getElementById('dash-pca-list');
+    if (!box) return;
+    var list = Array.isArray(rows) ? rows : (rows && rows.data) || [];
+    if (!list.length) {
+      box.innerHTML = '<div style="padding:16px;color:#64748b;">Nenhum item cadastrado ainda. '
+        + 'Use <strong>Plano de Contratações</strong> para registrar o primeiro.</div>';
+      return;
+    }
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:.92rem;">'
+      + '<thead><tr style="background:#f8fafc;text-align:left;">'
+      + '<th style="padding:10px;border-bottom:1px solid #e2e8f0;">Descrição</th>'
+      + '<th style="padding:10px;border-bottom:1px solid #e2e8f0;">Status</th>'
+      + '<th style="padding:10px;border-bottom:1px solid #e2e8f0;">Valor</th>'
+      + '</tr></thead><tbody>';
+    list.slice(0, 8).forEach(function (it) {
+      var desc = it.Descricao || it.descricao || it.Titulo || '(sem descrição)';
+      var status = it.Status || it.status || '—';
+      var valor = it.ValorEstimado || it.valorEstimado || 0;
+      html += '<tr>'
+        + '<td style="padding:10px;border-bottom:1px solid #f1f5f9;">' + sanitizeString(desc) + '</td>'
+        + '<td style="padding:10px;border-bottom:1px solid #f1f5f9;">' + sanitizeString(status) + '</td>'
+        + '<td style="padding:10px;border-bottom:1px solid #f1f5f9;">' + dashFmtMoney(valor) + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    box.innerHTML = html;
+  }
+  var dashboardRefreshBusy = false;
+  var dashboardRefreshSerial = 0;
+  function dashSetOperationStatus(message) {
+    var status = document.getElementById('dashboard-operation-status');
+    if (status) status.textContent = message || '';
+  }
+  // Globais usadas pelo Dashboard_Main e pelo botao "Atualizar".
+  window.refreshDashboardMain = function () {
+    if (dashboardRefreshBusy) return;
+    dashboardRefreshBusy = true;
+    var serial = ++dashboardRefreshSerial;
+    var root = document.getElementById('dashboard-root');
+    var refreshButton = document.getElementById('btn-refresh-dashboard');
+    if (root) root.setAttribute('aria-busy', 'true');
+    if (refreshButton) { refreshButton.disabled = true; refreshButton.setAttribute('aria-busy', 'true'); }
+    dashSetOperationStatus('Atualizando o painel do PCA.');
+    dashRenderUser();
+    var pending = 2;
+    function finish() {
+      pending -= 1;
+      if (pending > 0 || serial !== dashboardRefreshSerial) return;
+      dashboardRefreshBusy = false;
+      if (root) root.setAttribute('aria-busy', 'false');
+      if (refreshButton) { refreshButton.disabled = false; refreshButton.setAttribute('aria-busy', 'false'); }
+      dashSetOperationStatus('Painel do PCA atualizado.');
+    }
+    Metateca.callServer('getDashboardMetrics', [], function (m) { if (serial === dashboardRefreshSerial) dashRenderMetrics(m); finish(); }, function (error) {
+      console.error('PCA: falha ao carregar métricas', error);
+      if (serial === dashboardRefreshSerial) dashRenderMetrics(null);
+      finish();
+    });
+    Metateca.callServer('getPCAList', [], function (r) { if (serial === dashboardRefreshSerial) dashRenderPcaList(r); finish(); }, function (error) {
+      console.error('PCA: falha ao carregar itens', error);
+      if (serial === dashboardRefreshSerial) dashRenderPcaList([]);
+      finish();
+    });
+  };
+  window.initDashboardMain = window.refreshDashboardMain;
+
+  window.generateManagementMemoryFromDashboard = function () {
+    var button = document.getElementById('btn-management-memory');
+    var focus = document.getElementById('management-memory-focus');
+    if (button && button.disabled) return;
+    if (button) button.disabled = true;
+    if (button) button.setAttribute('aria-busy', 'true');
+    dashSetOperationStatus('Gerando memória de gestão.');
+    Metateca.callServer('generateManagementMemory', [{
+      foco: focus ? String(focus.value || '').trim() : ''
+    }], function (result) {
+      renderManagementMemory_(result || {});
+      if (button) button.disabled = false;
+      if (button) button.setAttribute('aria-busy', 'false');
+      dashSetOperationStatus('Memória de gestão pronta para revisão.');
+    }, function () {
+      if (button) button.disabled = false;
+      if (button) button.setAttribute('aria-busy', 'false');
+      dashSetOperationStatus('Não foi possível gerar a memória de gestão agora.');
+    });
+  };
+
+  // ─── Proposta #50 — Minuta de despacho fundamentada nos registros ───────────
+
+  window.generateDispatchDraftFromDashboard = function () {
+    var button     = document.getElementById('btn-dispatch-draft');
+    var assuntoEl  = document.getElementById('dispatch-assunto');
+    var respEl     = document.getElementById('dispatch-responsavel');
+    if (button && button.disabled) return;
+    if (button) button.disabled = true;
+    if (button) button.setAttribute('aria-busy', 'true');
+    dashSetOperationStatus('Gerando minuta de despacho.');
+
+    var payload = {
+      assunto:     assuntoEl  ? String(assuntoEl.value  || '').trim() : '',
+      responsavel: respEl     ? String(respEl.value     || '').trim() : '',
+      data:        new Date().toLocaleDateString('pt-BR')
+    };
+
+    Metateca.callServer('generateDispatchDraft', [payload],
+      function (result) {
+        renderDispatchDraft_(result || {});
+        if (button) button.disabled = false;
+        if (button) button.setAttribute('aria-busy', 'false');
+        dashSetOperationStatus('Minuta de despacho pronta para revisão.');
+      },
+      function () {
+        if (button) button.disabled = false;
+        if (button) button.setAttribute('aria-busy', 'false');
+        dashSetOperationStatus('Não foi possível gerar a minuta agora.');
+      }
+    );
+  };
+
+  function renderDispatchDraft_(result) {
+    var box = document.getElementById('dispatch-draft-result');
+    if (!box) return;
+    box.hidden = false;
+
+    // badge de fonte
+    var badge = document.getElementById('dispatch-source-badge');
+    if (badge) {
+      badge.textContent = result.source === 'gemini' ? 'Gemini' : 'Local';
+      badge.style.background = result.source === 'gemini'
+        ? 'rgba(29,78,216,.12)' : 'rgba(100,116,139,.12)';
+      badge.style.color = result.source === 'gemini' ? '#1d4ed8' : '#475569';
+    }
+
+    // Minuta
+    var minutaEl = document.getElementById('dispatch-minuta');
+    if (minutaEl) minutaEl.textContent = result.minutaDespacho || '';
+
+    // Relatório de acompanhamento
+    var tbody = document.getElementById('dispatch-acompanhamento-tbody');
+    var emptyMsg = document.getElementById('dispatch-acompanhamento-empty');
+    var rows = Array.isArray(result.relatorioAcompanhamento) ? result.relatorioAcompanhamento : [];
+    if (tbody) {
+      tbody.replaceChildren();
+      rows.forEach(function (item) {
+        var tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        [
+          item.demandaId  || '—',
+          item.descricao  || '—',
+          item.status     || '—',
+          item.providenciaSugerida   || '—',
+          item.instanciaCompetente   || '—',
+          item.observacao || ''
+        ].forEach(function (val, idx) {
+          var td = document.createElement('td');
+          td.style.cssText = 'padding:8px 10px;vertical-align:top;' +
+            (idx === 3 ? 'max-width:220px;' : idx === 4 ? 'white-space:nowrap;' : '');
+          td.textContent = val;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+    if (emptyMsg) emptyMsg.hidden = rows.length > 0;
+
+    // Premissas
+    var premissasEl = document.getElementById('dispatch-premissas');
+    if (premissasEl) {
+      premissasEl.replaceChildren();
+      (result.premissas || []).forEach(function (p) {
+        var li = document.createElement('li');
+        li.textContent = p;
+        premissasEl.appendChild(li);
+      });
+    }
+
+    // Aviso
+    var avisoEl = document.getElementById('dispatch-aviso');
+    if (avisoEl) avisoEl.textContent = result.aviso || '';
+
+    // Meta
+    var metaEl = document.getElementById('dispatch-meta');
+    if (metaEl) {
+      metaEl.textContent = 'Gerado em: ' + (result.generatedAt || '') +
+        '  |  Demandas analisadas: ' + (result.demandCount || 0) +
+        (result.error ? '  |  Aviso: ' + result.error : '');
+    }
+
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function renderManagementMemory_(result) {
+    dashSetText_('management-memory-summary', result.historicoResumo || '');
+    dashSetText_('management-memory-warning', result.aviso || '');
+    renderManagementList_('management-memory-groups', result.grupos || [], function (item) {
+      return (item.nome || 'Grupo') + ' (' + Number(item.quantidade || 0) + '): ' + (item.justificativa || '');
+    });
+    renderManagementList_('management-memory-criteria', result.criteriosPriorizacao || [], function (item) {
+      return (item.criterio || 'Critério') + ': ' + (item.comoAplicar || '') + (item.ressalva ? ' Ressalva: ' + item.ressalva : '');
+    });
+    renderManagementList_('management-memory-direction', result.direcaoPodeDeliberar || []);
+    renderManagementList_('management-memory-collegiate', result.exigeColegiado || []);
+    renderManagementList_('management-memory-external', result.dependeCrePpOuSedf || []);
+    renderManagementList_('management-memory-gaps', result.lacunasDeRegistro || []);
+    var box = document.getElementById('management-memory-result');
+    if (box) box.hidden = false;
+  }
+
+  function dashSetText_(id, value) {
+    var node = document.getElementById(id);
+    if (node) node.textContent = String(value == null ? '' : value);
+  }
+
+  function renderManagementList_(id, items, formatter) {
+    var list = document.getElementById(id);
+    if (!list) return;
+    list.replaceChildren();
+    (items || []).forEach(function (item) {
+      var row = document.createElement('li');
+      row.textContent = formatter ? formatter(item) : String(item);
+      list.appendChild(row);
+    });
+    if (!list.children.length) {
+      var empty = document.createElement('li');
+      empty.textContent = 'Nenhum item classificado automaticamente; revisar com a equipe.';
+      list.appendChild(empty);
+    }
+  }
+
+  // Inicializa ao carregar a janela
+  window.addEventListener('load', () => Metateca.init());
+
+  /**
+   * Sanitizes a string for safe insertion into HTML context.
+   * Escapes HTML special characters to prevent XSS. Use this (or the
+   * per-module aliases _escapeHtml / _escapeLegal) before any dynamic
+   * value is concatenated into an HTML template literal.
+   * @param {string} str
+   * @returns {string}
+   */
+  function sanitizeString(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
+  }
+
+  /** Nome canonico da frota para o helper de escape (delegata sanitizeString). */
+  function escapeHtml(value) {
+    return sanitizeString(value);
+  }
+</script>
+
+<script>
+/* codex-school-community-ux-script: pequenos ajustes de contexto escolar */
+(function() {
+  if (window.__codexSchoolCommunityUx) return;
+  window.__codexSchoolCommunityUx = true;
+
+  function ready(fn) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+    else fn();
+  }
+
+  ready(function() {
+    document.documentElement.setAttribute('data-community-context', 'school');
+
+    document.querySelectorAll('form').forEach(function(form) {
+      if (!form.getAttribute('aria-label') && !form.getAttribute('aria-labelledby')) {
+        form.setAttribute('aria-label', 'Formulario da comunidade escolar');
+      }
+    });
+
+    document.querySelectorAll('input, select, textarea').forEach(function(field) {
+      if (!field.id && field.name) field.id = 'field-' + String(field.name).replace(/[^a-zA-Z0-9_-]/g, '-');
+      if (field.required && !field.getAttribute('aria-required')) field.setAttribute('aria-required', 'true');
+      if (!field.getAttribute('autocomplete')) {
+        var type = (field.getAttribute('type') || '').toLowerCase();
+        var name = (field.getAttribute('name') || field.id || '').toLowerCase();
+        if (type === 'email' || name.indexOf('email') >= 0) field.setAttribute('autocomplete', 'email');
+        else if (name.indexOf('nome') >= 0 || name.indexOf('name') >= 0) field.setAttribute('autocomplete', 'name');
+        else if (name.indexOf('senha') >= 0 || name.indexOf('password') >= 0) field.setAttribute('autocomplete', 'current-password');
+      }
+    });
+
+    document.querySelectorAll('button:not([type])').forEach(function(button) {
+      button.setAttribute('type', 'button');
+    });
+  });
+})();
+</script>
+
+<script>
+/* codex-project-behavior-standardization: microcomportamentos compartilhados */
+(function() {
+  if (window.__codexProjectBehaviorStandardization) return;
+  window.__codexProjectBehaviorStandardization = true;
+
+  var SUBMIT_LOCK_MS = 2500;
+  var invalidFocusPending = false;
+
+  function isElement(value) {
+    return value && value.nodeType === 1;
+  }
+
+  function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function unlockForm(form, button) {
+    if (isElement(form)) {
+      delete form.dataset.codexSubmitting;
+      if (form.getAttribute('aria-busy') === 'true') form.setAttribute('aria-busy', 'false');
+    }
+
+    if (isElement(button) && button.dataset.codexSubmitLocked === 'true') {
+      delete button.dataset.codexSubmitLocked;
+      button.disabled = false;
+      button.removeAttribute('aria-disabled');
+    }
+  }
+
+  function restoreSubmitLocks(scope) {
+    var root = scope && scope.querySelectorAll ? scope : document;
+
+    root.querySelectorAll('form[data-codex-submitting="true"]').forEach(function(form) {
+      unlockForm(form);
+    });
+
+    root.querySelectorAll('[data-codex-submit-locked="true"]').forEach(function(button) {
+      unlockForm(null, button);
+    });
+  }
+
+  document.addEventListener('submit', function(event) {
+    var form = event.target;
+    if (!isElement(form) || String(form.tagName).toLowerCase() !== 'form') return;
+    if (form.hasAttribute('data-no-submit-lock')) return;
+
+    if (form.dataset.codexSubmitting === 'true') {
+      event.preventDefault();
+      return;
+    }
+
+    if (typeof form.checkValidity === 'function' && !form.checkValidity()) return;
+
+    form.dataset.codexSubmitting = 'true';
+    form.setAttribute('aria-busy', 'true');
+
+    var button = event.submitter || form.querySelector('button[type="submit"], input[type="submit"], button:not([type])');
+    if (isElement(button) && !button.disabled && !button.hasAttribute('data-no-submit-lock')) {
+      button.dataset.codexSubmitLocked = 'true';
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+    }
+
+    window.setTimeout(function() {
+      unlockForm(form, button);
+    }, SUBMIT_LOCK_MS);
+  }, true);
+
+  document.addEventListener('invalid', function(event) {
+    var field = event.target;
+    if (!isElement(field) || invalidFocusPending) return;
+    invalidFocusPending = true;
+
+    window.setTimeout(function() {
+      invalidFocusPending = false;
+      if (!document.documentElement.contains(field)) return;
+      try {
+        field.scrollIntoView({ block: 'center', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+        field.focus({ preventScroll: true });
+      } catch (error) {
+        field.focus();
+      }
+    }, 0);
+  }, true);
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key !== 'Escape') return;
+    var closedSomething = false;
+
+    var dialogs = Array.prototype.slice.call(document.querySelectorAll('dialog[open]'));
+    var dialog = dialogs[dialogs.length - 1];
+    if (dialog && typeof dialog.close === 'function') {
+      dialog.close();
+      closedSomething = true;
+    }
+
+    if (!closedSomething) {
+      var details = Array.prototype.slice.call(document.querySelectorAll('details[open]'));
+      var detail = details[details.length - 1];
+      if (detail) {
+        detail.removeAttribute('open');
+        closedSomething = true;
+      }
+    }
+
+    document.querySelectorAll('[aria-expanded="true"]').forEach(function(toggle) {
+      toggle.setAttribute('aria-expanded', 'false');
+      closedSomething = true;
+    });
+
+    if (closedSomething) event.preventDefault();
+  }, true);
+
+  window.addEventListener('pageshow', function() {
+    restoreSubmitLocks(document);
+  });
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') restoreSubmitLocks(document);
+  });
+})();
+</script>
+

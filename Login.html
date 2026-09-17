@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <style id="fleet-accessibility-baseline">
+    :focus-visible { outline: 3px solid currentColor; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3a1a4a">
+  <title>Preferencial PCA — Acesso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #3a1a4a;
+      --primary-strong: #2c1338;
+      --primary-soft: #351c46;
+      --surface: #20242b;
+      --background: #15171c;
+      --border: #343941;
+      --text: #e9ecf1;
+      --muted: #b2b9c4;
+      --danger: #b84a4a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background: var(--background);
+      font-family: "Inter", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    .login-shell {
+      display: grid;
+      min-height: 100vh;
+      grid-template-columns: minmax(360px, 0.9fr) minmax(480px, 1.1fr);
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+    .login-context {
+      position: relative;
+      display: flex;
+      overflow: hidden;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(34px, 6vw, 76px);
+      color: #fff;
+      background:
+        linear-gradient(155deg, rgba(44, 19, 56, 0.96), rgba(58, 26, 74, 0.84)),
+        radial-gradient(circle at 70% 20%, rgba(233, 166, 76, 0.88), transparent 40%);
+    }
+    .login-context::before,
+    .login-context::after {
+      position: absolute;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      content: "";
+    }
+    .login-context::before { width: 420px; height: 420px; right: -230px; top: -120px; }
+    .login-context::after { width: 270px; height: 270px; left: -150px; bottom: -100px; }
+    .login-brand,
+    .login-pitch,
+    .login-context-footer { position: relative; z-index: 1; }
+    .login-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 13px;
+    }
+    .login-brand-mark {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      overflow: hidden;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+    }
+    .login-brand-mark img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .login-brand strong,
+    .login-brand small { display: block; }
+    .login-brand strong { font-size: 1.08rem; letter-spacing: 0.07em; }
+    .login-brand small { margin-top: 3px; color: rgba(255, 255, 255, 0.72); font-size: 0.72rem; }
+    .login-pitch { max-width: 570px; margin-block: 60px; }
+    .login-pitch span {
+      display: block;
+      margin-bottom: 15px;
+      color: #eac27a;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .login-pitch h1 {
+      max-width: 540px;
+      margin: 0;
+      font-size: clamp(2.25rem, 5vw, 4.5rem);
+      letter-spacing: -0.055em;
+      line-height: 1.02;
+    }
+    .login-pitch p {
+      max-width: 520px;
+      margin: 24px 0 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 1rem;
+      line-height: 1.75;
+    }
+    .login-features {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 36px;
+    }
+    .login-feature {
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      backdrop-filter: blur(10px);
+    }
+    .login-feature strong,
+    .login-feature small { display: block; }
+    .login-feature strong { margin-top: 12px; font-size: 0.78rem; }
+    .login-feature small { margin-top: 5px; color: rgba(255, 255, 255, 0.64); font-size: 0.66rem; line-height: 1.4; }
+    .login-context-footer { color: rgba(255, 255, 255, 0.56); font-size: 0.68rem; }
+
+    .login-form-side {
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 85% 5%, rgba(233, 166, 76, 0.08), transparent 25rem),
+        var(--background);
+    }
+    .login-form-wrap { width: min(430px, 100%); }
+    .login-form-wrap > span {
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .login-form-wrap h2 {
+      margin: 10px 0 0;
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      letter-spacing: -0.04em;
+    }
+    .login-form-wrap > p { margin: 11px 0 30px; color: var(--muted); line-height: 1.6; }
+    .login-field { margin-bottom: 18px; }
+    .login-field label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+    .login-input-wrap { position: relative; }
+    .login-input-wrap input {
+      width: 100%;
+      height: 52px;
+      padding: 0 46px 0 16px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      outline: 0;
+      font-size: 16px;
+      box-sizing: border-box;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+    .login-input-wrap input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(58, 26, 74, 0.1);
+    }
+    .password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-radius: 9px;
+      cursor: pointer;
+      transform: translateY(-50%);
+    }
+    .password-toggle:hover { color: var(--primary); background: var(--primary-soft); }
+    #error-message {
+      min-height: 22px;
+      margin: 3px 0 13px;
+      color: var(--danger);
+      font-size: 0.76rem;
+      line-height: 1.4;
+    }
+    .login-submit {
+      display: flex;
+      width: 100%;
+      height: 52px;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      color: #fff;
+      background: var(--primary);
+      border: 0;
+      border-radius: 13px;
+      box-shadow: 0 12px 24px rgba(58, 26, 74, 0.18);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .login-submit:hover { background: var(--primary-strong); }
+    .login-submit:disabled { cursor: wait; opacity: 0.7; }
+    .login-security {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 0.68rem;
+    }
+    .login-security i { color: var(--primary); font-size: 16px; }
+
+    @media (max-width: 900px) {
+      .login-shell { grid-template-columns: 1fr; }
+      .login-context { min-height: auto; padding: 28px; }
+      .login-pitch { margin: 54px 0 20px; }
+      .login-pitch h1 { font-size: clamp(2.15rem, 9vw, 3.5rem); }
+      .login-pitch p,
+      .login-features,
+      .login-context-footer { display: none; }
+      .login-form-side { min-height: 58vh; padding: 34px 20px; }
+    }
+  </style>
+  <script id="codex-login-brand-base64-script">
+function _escapeHtml(text) {
+  if (text === null || text === undefined) return '';
+  return String(text).replace(/[&<>'"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+
+  (function () {
+    'use strict';
+    var logoSrc = 'data:image/png;base64,<?!= include("BrandLogoBase64"); ?>';
+
+    function ready(fn) {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+      else fn();
+    }
+
+    function findTarget() {
+      return document.querySelector('.login-brand-mark, .brand-mark, .auth-logo, .login-logo, .auth-brand');
+    }
+
+    ready(function () {
+      if (document.querySelector('.codex-login-logo')) return;
+      var target = findTarget();
+      if (!target) return;
+
+      if (target.tagName === 'IMG') {
+        target.src = logoSrc;
+        target.alt = target.alt || 'Marca do projeto';
+        target.classList.add('codex-login-logo');
+        return;
+      }
+
+      var img = document.createElement('img');
+      img.src = logoSrc;
+      img.alt = 'Marca do projeto';
+      img.className = 'codex-login-logo';
+      img.style.cssText = 'width:100%;height:100%;object-fit:contain;border-radius:inherit;';
+      target.classList.add('codex-login-logo-target');
+      target.innerHTML = '';
+      target.appendChild(img);
+    });
+  }());
+  </script>
+  <style id="fleet-mobile-wcag-aa">
+    /* Contrato FROTA: ergonomia S20 e WCAG 2.1 AA. */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    :is(button, [role="button"], input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+      min-width: 48px !important;
+      min-height: 48px !important;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body>
+  <main class="login-shell">
+    <section class="login-context" aria-label="Sobre Preferencial PCA">
+      <div class="login-brand">
+        <span class="login-brand-mark"></span>
+        <span><strong>Preferencial PCA</strong><small>Interface de análise e decisão</small></span>
+      </div>
+
+      <div class="login-pitch">
+        <span>Painel analítico</span>
+        <h1>Leitura clara para decisões que importam.</h1>
+        <p>Entre para acompanhar o retrato multivariado das demandas da escola com uma experiência leve, objetiva e pronta para uso em qualquer tela.</p>
+        <div class="login-features" aria-label="Recursos do sistema">
+          <div class="login-feature"><strong>Leitura sintética</strong><small>Componentes e tendências com foco na decisão.</small></div>
+          <div class="login-feature"><strong>Fluxo enxuto</strong><small>Acesso rápido, estável e sem distrações.</small></div>
+          <div class="login-feature"><strong>Acesso protegido</strong><small>Dados pessoais em ambiente restrito.</small></div>
+        </div>
+      </div>
+
+      <div class="login-context-footer">A experiência segue a mesma anatomia visual do Tool Debate.</div>
+    </section>
+
+    <section class="login-form-side" aria-labelledby="login-title">
+      <div class="login-form-wrap">
+        <span>Área restrita</span>
+        <h2 id="login-title">Acesse Preferencial PCA</h2>
+        <p>Informe suas credenciais institucionais para continuar.</p>
+
+        <form id="loginForm">
+          <div class="login-field">
+            <label for="username">Usuário</label>
+            <div class="login-input-wrap">
+              <input inputmode="text" id="username" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" required autofocus>
+            </div>
+          </div>
+          <div class="login-field">
+            <label for="password">Senha</label>
+            <div class="login-input-wrap">
+              <input inputmode="text" id="password" name="password" type="password" autocomplete="current-password" enterkeyhint="go" required>
+              <button id="password-toggle" class="password-toggle" type="button" aria-label="Mostrar senha">
+                <i class="material-icons" aria-hidden="true">visibility</i>
+              </button>
+            </div>
+          </div>
+          <p id="error-message" role="alert" aria-live="assertive"></p>
+          <button id="login-button" class="login-submit" type="submit">
+            <span>Entrar em Preferencial PCA</span>
+          </button>
+        </form>
+        <div class="login-security">Seus dados são usados apenas para autenticação no sistema.</div>
+      </div>
+    </section>
+  </main>
+
+  <?!= include("ApiClient") ?>
+  <?!= include("LoadingSpinner") ?>
+  <?!= include("Alert") ?>
+
+  <script>
+    const PROJECT_LOGIN_URL = <?!= JSON.stringify((typeof data !== 'undefined' && data && data.scriptUrl) ? data.scriptUrl : getScriptUrl()) ?>;
+    const passwordInput = document.getElementById('password');
+    const passwordToggle = document.getElementById('password-toggle');
+
+    passwordToggle.addEventListener('click', function() {
+      const showing = passwordInput.type === 'text';
+      passwordInput.type = showing ? 'password' : 'text';
+      passwordToggle.querySelector(".material-icons").textContent = showing
+        ? "visibility"
+        : "visibility_off";
+      passwordToggle.setAttribute('aria-label', showing ? 'Mostrar senha' : 'Ocultar senha');
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const button = document.getElementById('login-button');
+      const buttonLabel = button.querySelector('span');
+      const errorMessage = document.getElementById('error-message');
+      errorMessage.textContent = '';
+      this.setAttribute('aria-busy', 'true');
+      button.disabled = true;
+      buttonLabel.textContent = 'Validando acesso...';
+
+      ApiClient.call('AuthService', 'login', {
+        username: document.getElementById('username').value.trim(),
+        password: passwordInput.value.trim()
+      }, { loadingMessage: 'Validando credenciais...' })
+        .then(function(response) {
+          if (!response.success) {
+            errorMessage.textContent = 'Usuário ou senha inválidos.';
+            return;
+          }
+          var dest = response.redirectUrl || (PROJECT_LOGIN_URL + '?page=app#tok=' + encodeURIComponent(response.token || ''));
+          if (window.top) { window.top.location.href = dest; } else { window.location.href = dest; }
+        })
+        .catch(function() {
+          errorMessage.textContent = 'Usuário ou senha inválidos.';
+        })
+        .finally(function() {
+          if (passwordInput.type !== 'password') passwordInput.type = 'password';
+          document.getElementById('loginForm').setAttribute('aria-busy', 'false');
+          button.disabled = false;
+          buttonLabel.textContent = 'Entrar em Preferencial PCA';
+        });
+    });
+  </script>
+</body>
+</html>

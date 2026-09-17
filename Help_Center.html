@@ -1,0 +1,31 @@
+<!-- [TRUSTED-SERVER-HTML] Template com saída sanitizada -->
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Central de ajuda — Painel PCA</title>
+  <style id="fleet-mobile-wcag-aa">
+    /* Contrato FROTA: ergonomia S20 e WCAG 2.1 AA. */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    :is(button, [role="button"], input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+      min-width: 48px !important;
+      min-height: 48px !important;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body>
+  <main aria-labelledby="help-title">
+    <h1 id="help-title">Central de ajuda</h1>
+    <p>Use o painel para registrar uma necessidade, comparar critérios e acompanhar a providência responsável.</p>
+    <h2>Fluxo recomendado</h2>
+    <ol>
+      <li>Cadastre o contexto e selecione a categoria predominante.</li>
+      <li>Revise os critérios e registre a decisão colegiada quando aplicável.</li>
+      <li>Salve a providência e acompanhe o status no dashboard.</li>
+    </ol>
+    <p role="note">Não inclua dados pessoais sensíveis nos campos de análise.</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,537 @@
+<style id="up-oracular-design-system">
+:focus-visible {
+  outline: 3px solid var(--accent, #8ab4f8);
+  outline-offset: 2px;
+}
+:root {
+  color-scheme: dark;
+  --uo-bg: #15171c;
+  --uo-panel: #20242b;
+  --uo-text: #e9ecf1;
+  --uo-muted: #b2b9c4;
+  --uo-border: #343941;
+  --uo-accent: #7aa2d6;
+  --uo-radius-group: 10px;
+  --uo-radius-control: 8px;
+}
+
+html, body {
+  background: var(--uo-bg) !important;
+  color: var(--uo-text) !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body, input, select, textarea, button {
+  color: var(--uo-text);
+}
+
+.card, .panel, .modal, .dialog, dialog, .container,
+.box, .widget, .section, .sidebar, .drawer, .popover,
+[role="dialog"], [class*="card"], [class*="panel"] {
+  background-color: var(--uo-panel) !important;
+  border-color: var(--uo-border) !important;
+  border-radius: var(--uo-radius-group) !important;
+}
+
+button, input, select, textarea, .btn, .button,
+[role="button"], [role="menuitem"], .dropdown-item,
+.menu-item, [class*="button"], [class*="dropdown-item"] {
+  border-radius: var(--uo-radius-control) !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+input, select, textarea {
+  background-color: var(--uo-panel) !important;
+  border: 1px solid var(--uo-border) !important;
+  padding: 8px !important;
+  box-sizing: border-box;
+}
+
+label, .form-label, [class*="form-label"] {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--uo-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.35;
+}
+
+.uo-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.uo-feedback-box {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  min-width: 220px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--uo-border);
+  border-radius: var(--uo-radius-group);
+  background: var(--uo-panel);
+  color: var(--uo-text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.uo-feedback-box.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.uo-feedback-box[data-kind="ok"] {
+  border-color: #8fc2a6;
+  color: #8fc2a6;
+}
+
+.uo-feedback-box[data-kind="err"] {
+  border-color: #d98b93;
+  color: #d98b93;
+}
+
+form[aria-busy="true"] {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+form[aria-busy="true"] :is(button, input[type="submit"], input[type="button"]) {
+  pointer-events: none;
+}
+
+button, .btn-primary, .button-primary,
+[class*="primary"][role="button"] {
+  background-color: var(--uo-accent) !important;
+}
+
+p, small, .muted, .secondary, .subtitle,
+[class*="muted"], [class*="secondary"] {
+  color: var(--uo-muted) !important;
+}
+
+hr, table, th, td, fieldset {
+  border-color: var(--uo-border) !important;
+}
+
+a {
+  color: var(--uo-accent);
+}
+
+/* Geometrias funcionais permanecem circulares. */
+.avatar, .spinner, .loading-ring, .dot, .status-dot,
+[class*="avatar"], [class*="spinner"], [class*="loading-ring"] {
+  border-radius: 50% !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent, #8ab4f8) !important;
+  box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.1) !important;
+}
+</style>
+<script id="up-oracular-form-feedback">
+(function () {
+  'use strict';
+  if (window.UpOracularFeedback) return;
+
+  var timer = null;
+  function notify(kind, message) {
+    var box = document.getElementById('uo-feedback-box');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'uo-feedback-box';
+      box.className = 'uo-feedback-box';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      document.body.appendChild(box);
+    }
+    box.dataset.kind = kind === 'err' ? 'err' : 'ok';
+    box.textContent = String(message || (kind === 'err' ? 'Nao foi possivel concluir.' : 'Operacao concluida.'));
+    box.classList.add('is-visible');
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      box.classList.remove('is-visible');
+    }, 1000);
+  }
+
+  function connectLabels(form) {
+    form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (field, index) {
+      var id = field.id || ('uo-field-' + index + '-' + Math.random().toString(36).slice(2, 7));
+      field.id = id;
+      var label = form.querySelector('label[for="' + id + '"]');
+      if (!label) {
+        var sibling = field.previousElementSibling;
+        if (sibling && sibling.tagName === 'LABEL') {
+          sibling.htmlFor = id;
+          label = sibling;
+        }
+      }
+      if (label && field.parentElement && !field.parentElement.classList.contains('uo-field')) {
+        field.parentElement.classList.add('uo-field');
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form').forEach(connectLabels);
+  });
+
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (!form || form.tagName !== 'FORM') return;
+    form.setAttribute('aria-busy', 'true');
+    notify('ok', 'Enviando...');
+    window.setTimeout(function () {
+      if (form.getAttribute('aria-busy') === 'true') {
+        form.removeAttribute('aria-busy');
+      }
+    }, 10000);
+  }, true);
+
+  window.UpOracularFeedback = {
+    ok: function (message) { notify('ok', message); },
+    err: function (message) { notify('err', message); },
+    done: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('ok', message);
+    },
+    fail: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('err', message);
+    }
+  };
+}());
+</script>
+
+<!--
+  @file Dashboard_Main.html
+  @description Painel inicial (landing pos-login) — menu e funcionalidades minimas
+  visiveis. Autossuficiente: estilos inline e leitura defensiva dos dados do servidor.
+-->
+<div class="animate-fade" id="dashboard-root" aria-busy="true"
+     style="max-width:1100px;margin:0 auto;padding:24px 20px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+
+  <!-- Cabecalho -->
+  <header style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <div>
+      <h1 style="margin:0;font-size:1.6rem;color:#0f3d2e;">
+        Olá, <span id="dash-user-name">Usuário</span> <i class="material-icons cdx-mi" aria-hidden="true">waving_hand</i>
+      </h1>
+      <p id="dash-user-role" style="margin:4px 0 0;color:#64748b;font-size:.95rem;">Painel da Direção · Escola Classe · CRE-PP</p>
+      <p id="dashboard-operation-status" role="status" aria-live="polite" style="margin:6px 0 0;color:#64748b;font-size:.82rem;">Carregando dados do painel...</p>
+    </div>
+    <button type="button" onclick="Metateca.logout()"
+            style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;">
+      Sair
+    </button>
+  </header>
+
+  <!-- Cards de metricas -->
+  <section aria-label="Indicadores" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:26px;">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <div style="color:#64748b;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;">Itens no PCA</div>
+      <div id="m-total" style="font-size:1.8rem;font-weight:800;color:#0f3d2e;">—</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <div style="color:#64748b;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;">Valor estimado</div>
+      <div id="m-valor" style="font-size:1.8rem;font-weight:800;color:#0f3d2e;">—</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <div style="color:#64748b;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;">Em análise</div>
+      <div id="m-draft" style="font-size:1.8rem;font-weight:800;color:#b45309;">—</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <div style="color:#64748b;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;">Priorizados</div>
+      <div id="m-approved" style="font-size:1.8rem;font-weight:800;color:#15803d;">—</div>
+    </div>
+  </section>
+
+  <!-- Menu de acoes -->
+  <h2 style="font-size:1.1rem;color:#334155;margin:0 0 12px;">O que você deseja fazer?</h2>
+  <nav aria-label="Menu principal" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+
+    <a href="#" onclick="Metateca.navigate('PCA_List_View');return false;"
+       style="text-decoration:none;background:#0f3d2e;color:#fff;border-radius:12px;padding:18px;display:block;">
+      <div style="font-size:1.6rem;"><i class="material-icons cdx-mi" aria-hidden="true">assignment</i></div>
+      <div style="font-weight:800;margin-top:6px;">Plano de Contratações</div>
+      <div style="font-size:.85rem;opacity:.85;margin-top:2px;">Ver e registrar itens do PCA</div>
+    </a>
+
+    <a href="#" onclick="Metateca.navigate('Legal_List_View');return false;"
+       style="text-decoration:none;background:#1d4ed8;color:#fff;border-radius:12px;padding:18px;display:block;">
+      <div style="font-size:1.6rem;"><i class="material-icons cdx-mi" aria-hidden="true">balance</i></div>
+      <div style="font-weight:800;margin-top:6px;">Referências Legais</div>
+      <div style="font-size:.85rem;opacity:.85;margin-top:2px;">Consultar base normativa</div>
+    </a>
+
+    <a href="#" id="menu-users" onclick="Metateca.navigate('User_List_View');return false;"
+       style="display:none;text-decoration:none;background:#7c3aed;color:#fff;border-radius:12px;padding:18px;">
+      <div style="font-size:1.6rem;"><i class="material-icons cdx-mi" aria-hidden="true">group</i></div>
+      <div style="font-weight:800;margin-top:6px;">Usuários</div>
+      <div style="font-size:.85rem;opacity:.85;margin-top:2px;">Gerir acessos (admin)</div>
+    </a>
+
+    <a href="#" onclick="Metateca.navigate('Settings_Page');return false;"
+       style="text-decoration:none;background:#0891b2;color:#fff;border-radius:12px;padding:18px;display:block;">
+      <div style="font-size:1.6rem;"><i class="material-icons cdx-mi" aria-hidden="true">settings</i></div>
+      <div style="font-weight:800;margin-top:6px;">Configurações</div>
+      <div style="font-size:.85rem;opacity:.85;margin-top:2px;">Ajustes do sistema</div>
+    </a>
+  </nav>
+
+  <!-- Ultimos itens do PCA (funcionalidade minima de leitura) -->
+  <section style="margin-top:28px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h2 style="font-size:1.1rem;color:#334155;margin:0;">Últimos itens do PCA</h2>
+      <button id="btn-refresh-dashboard" type="button" onclick="refreshDashboardMain()" aria-busy="false"
+              style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:600;color:#334155;">
+        ↻ Atualizar
+      </button>
+    </div>
+    <div id="dash-pca-list"
+         role="region" aria-live="polite" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+      <div style="padding:16px;color:#64748b;">Carregando...</div>
+    </div>
+  </section>
+
+  <section id="management-memory-card" style="margin-top:28px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
+      <div>
+        <h2 style="font-size:1.1rem;color:#334155;margin:0;">Memória de gestão</h2>
+        <p style="margin:5px 0 0;color:#64748b;">Resumo do histórico, agrupamentos e critérios sugeridos para revisão da direção.</p>
+      </div>
+      <button id="btn-management-memory" type="button" onclick="generateManagementMemoryFromDashboard()"
+              style="background:#0f3d2e;color:#fff;border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;">
+        Gerar memória com IA
+      </button>
+    </div>
+    <label for="management-memory-focus" style="display:block;margin-top:14px;font-weight:700;">Foco opcional</label>
+    <input inputmode="text" id="management-memory-focus" maxlength="300" placeholder="Ex.: demandas urgentes e encaminhamentos pendentes à CRE-PP"
+           style="width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+    <div id="management-memory-result" hidden role="region" aria-live="polite" style="margin-top:18px;">
+      <h3>Histórico resumido</h3>
+      <p id="management-memory-summary"></p>
+      <h3>Agrupamentos sugeridos</h3>
+      <ul id="management-memory-groups"></ul>
+      <h3>Critérios de priorização</h3>
+      <ul id="management-memory-criteria"></ul>
+      <h3>Direção pode avaliar e deliberar</h3>
+      <ul id="management-memory-direction"></ul>
+      <h3>Exige deliberação colegiada</h3>
+      <ul id="management-memory-collegiate"></ul>
+      <h3>Depende da CRE-PP, SEDF ou instância externa</h3>
+      <ul id="management-memory-external"></ul>
+      <h3>Lacunas a completar</h3>
+      <ul id="management-memory-gaps"></ul>
+      <p id="management-memory-warning" style="color:#92400e;font-weight:700;"></p>
+    </div>
+  </section>
+
+  <!-- Proposta #50 — Minuta de despacho fundamentada nos registros -->
+  <section id="dispatch-draft-card" style="margin-top:28px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
+      <div>
+        <h2 style="font-size:1.1rem;color:#334155;margin:0;">Minuta de despacho + acompanhamento</h2>
+        <p style="margin:5px 0 0;color:#64748b;">O Gemini redige uma minuta de despacho e um relatório de acompanhamento de providências, fundamentados nos registros do PCA. Para revisão e assinatura da direção — não equivale a deliberação.</p>
+      </div>
+      <button id="btn-dispatch-draft" type="button" onclick="generateDispatchDraftFromDashboard()"
+              style="background:#1d4ed8;color:#fff;border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;">
+        Gerar minuta com IA
+      </button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
+      <div>
+        <label for="dispatch-assunto" style="display:block;font-weight:700;margin-bottom:4px;">Assunto do despacho</label>
+        <input inputmode="text" id="dispatch-assunto" type="text" maxlength="400"
+               placeholder="Ex.: Encaminhamento das demandas de infraestrutura à CRE-PP"
+               style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;" autocomplete="name">
+      </div>
+      <div>
+        <label for="dispatch-responsavel" style="display:block;font-weight:700;margin-bottom:4px;">Autoridade responsável</label>
+        <input inputmode="text" id="dispatch-responsavel" type="text" maxlength="200"
+               placeholder="Ex.: Diretora Maria da Silva"
+               style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;" autocomplete="name">
+      </div>
+    </div>
+
+    <div id="dispatch-draft-result" hidden role="region" aria-live="polite" style="margin-top:18px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <h3 style="margin:0;font-size:1rem;color:#334155;">Minuta de despacho</h3>
+        <span id="dispatch-source-badge"
+              style="font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:100px;background:rgba(29,78,216,.12);color:#1d4ed8;"></span>
+      </div>
+      <pre id="dispatch-minuta"
+           style="white-space:pre-wrap;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;font-family:inherit;font-size:.9rem;line-height:1.6;overflow-x:auto;"></pre>
+
+      <h3 style="font-size:1rem;color:#334155;margin:18px 0 8px;">Relatório de acompanhamento de providências</h3>
+      <div style="overflow-x:auto;">
+        <table id="dispatch-acompanhamento-table"
+               style="width:100%;border-collapse:collapse;font-size:.88rem;">
+          <thead>
+            <tr style="background:#f1f5f9;text-align:left;">
+              <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;">ID</th>
+              <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;">Descrição</th>
+              <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;">Status</th>
+              <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;">Providência sugerida</th>
+              <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;">Instância competente</th>
+              <th style="padding:8px 10px;border-bottom:1px solid #e2e8f0;">Observação</th>
+            </tr>
+          </thead>
+          <tbody id="dispatch-acompanhamento-tbody"></tbody>
+        </table>
+      </div>
+      <div id="dispatch-acompanhamento-empty" hidden
+           style="padding:12px;color:#64748b;font-size:.9rem;">Nenhuma demanda retornada.</div>
+
+      <h3 style="font-size:1rem;color:#334155;margin:18px 0 8px;">Premissas</h3>
+      <ul id="dispatch-premissas" style="margin:0;padding-left:18px;"></ul>
+
+      <p id="dispatch-aviso"
+         style="margin-top:14px;padding:10px 14px;border-left:4px solid #b45309;background:#fffbeb;border-radius:0 8px 8px 0;color:#92400e;font-size:.88rem;font-weight:600;"></p>
+      <p id="dispatch-meta" style="margin-top:6px;font-size:.78rem;color:#94a3b8;"></p>
+    </div>
+  </section>
+
+</div>
+
+<!--
+  A logica de dados (initDashboardMain/refreshDashboardMain) vive em JS_Main.html
+  (nivel superior, sempre carregado) e e disparada por Metateca.onViewLoaded, pois
+  scripts inseridos via innerHTML nao executam no ambiente do HtmlService.
+-->
+<!-- CODEX_NOTEBOOK_GRAPH_GALLERY_V1 -->
+<section class="codex-notebook-graphs" data-codex-notebook-graphs aria-live="polite">
+  <style>
+    .codex-notebook-graphs {
+      margin: 32px 0 0;
+      padding: 20px;
+      border: 1px solid var(--uo-border, rgba(120,130,150,.22));
+      border-radius: var(--uo-radius-group, 10px);
+      background: var(--uo-panel, #20242b);
+      color: var(--uo-text, #e9ecf1);
+      box-shadow: 0 10px 30px rgba(0,0,0,.28);
+    }
+    .codex-notebook-graphs__header { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+    .codex-notebook-graphs__title { margin:0; font-size:1.05rem; line-height:1.3; font-weight:700; color:var(--uo-text,#e9ecf1); }
+    .codex-notebook-graphs__status { margin:0; font-size:.85rem; color:var(--uo-muted,#b2b9c4); }
+    .codex-notebook-graphs__grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+    .codex-notebook-graphs__figure { margin:0; overflow:hidden; border:1px solid var(--uo-border,#343941); border-radius:var(--uo-radius-control,8px); background:var(--uo-bg,#15171c); display:flex; flex-direction:column; }
+    .codex-notebook-graphs__btn { padding:0; margin:0; border:0; background:#fff; cursor:zoom-in; line-height:0; width:100%; }
+    .codex-notebook-graphs__figure img { display:block; width:100%; height:auto; }
+    .codex-notebook-graphs__cap { padding:10px 12px; }
+    .codex-notebook-graphs__cap-title { font-size:.9rem; font-weight:600; color:var(--uo-text,#e9ecf1); }
+    .codex-notebook-graphs__cap-desc { margin-top:2px; font-size:.78rem; line-height:1.35; color:var(--uo-muted,#b2b9c4); }
+    .codex-notebook-graphs__empty { padding:14px; border:1px dashed var(--uo-border,#343941); border-radius:8px; font-size:.85rem; line-height:1.5; color:var(--uo-muted,#b2b9c4); }
+    .codex-notebook-graphs__empty code { background:var(--uo-bg,#15171c); padding:1px 5px; border-radius:4px; }
+    .codex-notebook-graphs__lightbox { position:fixed; inset:0; z-index:2147483646; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(0,0,0,.82); }
+    .codex-notebook-graphs__lightbox.is-open { display:flex; }
+    .codex-notebook-graphs__lightbox img { max-width:96vw; max-height:90vh; border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+    .codex-notebook-graphs__close { position:absolute; top:16px; right:20px; width:40px; height:40px; border-radius:50%; border:1px solid var(--uo-border,#343941); background:var(--uo-panel,#20242b); color:var(--uo-text,#e9ecf1); font-size:22px; line-height:1; cursor:pointer; }
+  </style>
+  <div class="codex-notebook-graphs__header">
+    <h2 class="codex-notebook-graphs__title">Gráficos da análise (notebook)</h2>
+    <p class="codex-notebook-graphs__status" data-codex-graphs-status>Carregando gráficos...</p>
+  </div>
+  <div class="codex-notebook-graphs__grid" data-codex-graphs-grid></div>
+</section>
+<script>
+(function () {
+  var section = document.currentScript && document.currentScript.previousElementSibling;
+  if (!section || !section.matches('[data-codex-notebook-graphs]')) return;
+  var status = section.querySelector('[data-codex-graphs-status]');
+  var grid = section.querySelector('[data-codex-graphs-grid]');
+
+  var META = {
+    '01_overview_abas': { t: 'Visão geral por aba', d: 'Volume de registros em cada aba da planilha.' },
+    '02_distribuicoes_numericas': { t: 'Distribuições numéricas', d: 'Dispersão das principais métricas (boxplot).' },
+    '03_top_categorias': { t: 'Top categorias', d: 'Categorias mais frequentes na aba principal.' },
+    '04_serie_temporal': { t: 'Série temporal', d: 'Evolução dos registros ao longo do tempo.' }
+  };
+  function meta(name) {
+    var key = String(name || '').toLowerCase().replace(/\.(png|jpe?g)$/, '');
+    if (META[key]) return META[key];
+    var pretty = key.replace(/^\d+[_-]?/, '').replace(/[_-]+/g, ' ').trim();
+    pretty = pretty ? pretty.charAt(0).toUpperCase() + pretty.slice(1) : 'Gráfico';
+    return { t: pretty, d: '' };
+  }
+  function setStatus(text) { if (status) status.textContent = text; }
+
+  var lightbox, lightImg;
+  function close() { if (lightbox) lightbox.classList.remove('is-open'); }
+  function openLightbox(src, alt) {
+    if (!lightbox) {
+      lightbox = document.createElement('div');
+      lightbox.className = 'codex-notebook-graphs__lightbox';
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'codex-notebook-graphs__close';
+      btn.setAttribute('aria-label', 'Fechar'); btn.textContent = '\u00d7';
+      lightImg = document.createElement('img');
+      lightbox.appendChild(btn); lightbox.appendChild(lightImg);
+      document.body.appendChild(lightbox);
+      lightbox.addEventListener('click', function (e) { if (e.target === lightbox || e.target === btn) close(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    }
+    lightImg.src = src; lightImg.alt = alt || '';
+    lightbox.classList.add('is-open');
+  }
+
+  function render(response) {
+    var images = response && response.images ? response.images : [];
+    grid.innerHTML = '';
+    if (!images.length) {
+      grid.innerHTML = '<div class="codex-notebook-graphs__empty">' +
+        (response && response.message ? (response.message + ' ') : '') +
+        'Ainda não há gráficos. Rode <code>populateSyntheticData()</code> e depois o ' +
+        '<code>notebook.py</code> no Colab (com <code>SPREADSHEETS_ID</code> e <code>FOLDER_ID</code>).</div>';
+      setStatus('Nenhum gráfico ainda.');
+      return;
+    }
+    images.forEach(function (image) {
+      var info = meta(image.name);
+      var figure = document.createElement('figure');
+      figure.className = 'codex-notebook-graphs__figure';
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'codex-notebook-graphs__btn'; btn.title = 'Ampliar';
+      var img = document.createElement('img');
+      img.loading = 'lazy'; img.decoding = 'async'; img.src = image.dataUrl; img.alt = info.t;
+      btn.appendChild(img);
+      btn.addEventListener('click', function () { openLightbox(image.dataUrl, info.t); });
+      var cap = document.createElement('figcaption');
+      cap.className = 'codex-notebook-graphs__cap';
+      var ct = document.createElement('div');
+      ct.className = 'codex-notebook-graphs__cap-title'; ct.textContent = info.t;
+      cap.appendChild(ct);
+      if (info.d) {
+        var cd = document.createElement('div');
+        cd.className = 'codex-notebook-graphs__cap-desc'; cd.textContent = info.d;
+        cap.appendChild(cd);
+      }
+      figure.appendChild(btn); figure.appendChild(cap);
+      grid.appendChild(figure);
+    });
+    setStatus(images.length + ' gráfico(s).');
+  }
+
+  if (!window.google || !google.script || !google.script.run) {
+    setStatus('Disponível apenas no Web App publicado.');
+    grid.innerHTML = '<div class="codex-notebook-graphs__empty">Os gráficos aparecem quando esta tela roda dentro do Web App publicado.</div>';
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(render)
+    .withFailureHandler(function (error) {
+      setStatus(error && error.message ? error.message : 'Não foi possível carregar os gráficos.');
+    })
+    .getNotebookGraphImages({});
+}());
+</script>
+<!-- /CODEX_NOTEBOOK_GRAPH_GALLERY_V1 -->
